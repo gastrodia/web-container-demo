@@ -1,0 +1,22 @@
+{
+  "name": "web-container-demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2",
+    "vite": "^6.2.0"
+  },
+  "dependencies": {
+    "@types/lodash-es": "^4.17.12",
+    "@webcontainer/api": "^1.5.3-internal.2",
+    "@xterm/xterm": "^5.5.0",
+    "codemirror": "^6.0.1",
+    "lodash-es": "^4.17.21"
+  }
+}
