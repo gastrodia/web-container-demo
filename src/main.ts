@@ -1,8 +1,14 @@
-import { WebContainer, FileSystemTree } from "@webcontainer/api";
+import { WebContainer, FileSystemTree, FileNode, DirectoryNode } from "@webcontainer/api";
 import { EditorView, basicSetup } from "codemirror"
 import { Terminal } from '@xterm/xterm'
 import '@xterm/xterm/css/xterm.css'
 import { debounce } from 'lodash-es'
+
+interface DirNode {
+    name: string
+    type: 'file' | 'directory'
+    children?: DirNode[]
+}
 
 class Demo {
     editorView?: EditorView
@@ -12,38 +18,22 @@ class Demo {
     editorContainer = `#editor`
     previewContainer = `#preview`
     terminalContainer = `#terminal`
-    appVue = `
-<template>
-  <div>
-    <h1>Hello, {{ name }}!</h1>
-    <p>Welcome to Vue app!</p>
-    <pre>{{count}}</pre>
-    <el-button type="primary" @click="onClick">click</el-button>
-  </div>
-</template>
-<script setup lang="ts">
-  import { ref } from "vue"
-  const name = ref("World")
-  const count = ref<number>(0)
 
-  const onClick = () => {
-     count.value += 1
-  }
-</script>
-<style scoped>
-  h1 {
-    color: red;
-  }
-</style>
-        `
-
+    async loadLocalFile(path: string) {
+        const response = await fetch(path)
+        const content = await response.text()
+        return content
+    }
 
     async setup() {
         this.terminal = this.renderTerminal()
-        const resource = this.generateResources()
+        const resource = await this.generateResources()
+        const srcDir = resource.src as DirectoryNode
+        const vueFile = srcDir.directory['App.vue'] as FileNode
+        const vueCode = vueFile.file.contents as string
         await this.createWebContainer(resource, this.terminalWrite.bind(this), (url) => {
             this.onWebContainerReady(url)
-            this.editorView = this.renderEditor(this.appVue, this.onCodeChange.bind(this))
+            this.editorView = this.renderEditor(vueCode, this.onCodeChange.bind(this))
         })
     }
 
@@ -125,154 +115,36 @@ class Demo {
         this.webContainer?.fs.writeFile(path, str)
     }
 
-    generateResources(): FileSystemTree {
-        const tree: FileSystemTree = {
-            "vite.config.ts": {
-                file: {
-                    contents: `
-import { defineConfig } from 'vite'
-import vue from '@vitejs/plugin-vue'
+    async buildTree(dir: string, dirs: DirNode[], tree: FileSystemTree) {
+        const fileLoadPromises = dirs.map(async (file) => {
+            const path = `${dir}/${file.name}`
+            const key = path.replace(`${dir}/`, '')
 
-export default defineConfig({
-  plugins: [vue()],
-})
-                    `
+            if (file.type === 'file') {
+                const content = await this.loadLocalFile(path)
+                tree[key] = {
+                    file: { contents: content }
                 }
-            },
-            "tsconfig.json": {
-                file: {
-                    contents: `
-{
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
-}
-                    `
+            } else if (file.type === 'directory') {
+                tree[key] = {
+                    directory: {}
                 }
-            },
-            "tsconfig.app.json": {
-                file: {
-                    contents: `
-{
-  "extends": "@vue/tsconfig/tsconfig.dom.json",
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
-  },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]
-}
-                    `
-                }
-            },
-            "tsconfig.node.json": {
-                file: {
-                    contents: `
-{
-  "compilerOptions": {
-    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
-    "target": "ES2022",
-    "lib": ["ES2023"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    /* Bundler mode */
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "moduleDetection": "force",
-    "noEmit": true,
-    /* Linting */
-    "strict": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
-  },
-  "include": ["vite.config.ts"]
-}
-
-                    `
-                }
-            },
-            "package.json": {
-                file: {
-                    contents: `
-{
-  "name": "container",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "vue": "^3.5.13",
-    "element-plus": "^2.5.0"
-  },
-  "devDependencies": {
-    "@vitejs/plugin-vue": "^5.2.1",
-    "@vue/tsconfig": "^0.7.0",
-    "typescript": "~5.7.2",
-    "vite": "^6.2.0",
-    "vue-tsc": "^2.2.4"
-  }
-}
-
-                    `
-                }
-            },
-            "index.html": {
-                file: {
-                    contents: `
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Vue + TS</title>
-  </head>
-  <body>
-    <div id="app">preview loading...</div>
-    <script type="module" src="/src/main.ts"></script>
-  </body>
-</html>
-                    `
-                }
-            },
-            "src": {
-                directory: {
-                    "App.vue": {
-                        file: {
-                            contents: this.appVue
-                        }
-                    },
-                    "main.ts": {
-                        file: {
-                            contents: `
-import { createApp } from 'vue'
-import App from './App.vue'
-import ElementPlus from "element-plus"
-import "element-plus/dist/index.css"
-const app = createApp(App)
-app.use(ElementPlus)
-app.mount("#app")
-                            `
-                        }
-                    }
-                }
+                await this.buildTree(`${dir}/${file.name}`, file.children || [], tree[key].directory)
             }
-        }
 
-        return tree
+        })
+
+        await Promise.all(fileLoadPromises)
+    }
+
+    async generateResources(): Promise<FileSystemTree> {
+        const baseDir = '/container'
+        const fileTree: FileSystemTree = {}
+
+        const response = await fetch('/dir.json')
+        const containerDir: DirNode = await response.json()
+        await this.buildTree(baseDir, containerDir.children || [], fileTree)
+        return fileTree
     }
 }
 

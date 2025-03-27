@@ -1,0 +1,82 @@
+{
+  "name": "container",
+  "type": "directory",
+  "children": [
+    {
+      "name": "index.html",
+      "type": "file"
+    },
+    {
+      "name": "package.json",
+      "type": "file"
+    },
+    {
+      "name": "public",
+      "type": "directory",
+      "children": [
+        {
+          "name": "vite.svg",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": "src",
+      "type": "directory",
+      "children": [
+        {
+          "name": "App.vue",
+          "type": "file"
+        },
+        {
+          "name": "assets",
+          "type": "directory",
+          "children": [
+            {
+              "name": "vue.svg",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "components",
+          "type": "directory",
+          "children": [
+            {
+              "name": "HelloWorld.vue",
+              "type": "file"
+            }
+          ]
+        },
+        {
+          "name": "main.ts",
+          "type": "file"
+        },
+        {
+          "name": "style.css",
+          "type": "file"
+        },
+        {
+          "name": "vite-env.d.ts",
+          "type": "file"
+        }
+      ]
+    },
+    {
+      "name": "tsconfig.app.json",
+      "type": "file"
+    },
+    {
+      "name": "tsconfig.json",
+      "type": "file"
+    },
+    {
+      "name": "tsconfig.node.json",
+      "type": "file"
+    },
+    {
+      "name": "vite.config.ts",
+      "type": "file"
+    }
+  ]
+}

@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite'
+import dirStructurePlugin from './plugins/dir-structure'
+
 export default defineConfig({
+    plugins: [dirStructurePlugin()],
     server: {
         headers: {
             'Cross-Origin-Embedder-Policy': 'require-corp',
