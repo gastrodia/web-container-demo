@@ -18,9 +18,10 @@ class Demo {
     editorContainer = `#editor`
     previewContainer = `#preview`
     terminalContainer = `#terminal`
+    baseUrl = import.meta.env.BASE_URL ? import.meta.env.BASE_URL : '/'
 
     async loadLocalFile(path: string) {
-        const response = await fetch(path)
+        const response = await fetch(`${this.baseUrl}${path}`)
         const content = await response.text()
         return content
     }
@@ -141,7 +142,7 @@ class Demo {
         const baseDir = '/container'
         const fileTree: FileSystemTree = {}
 
-        const response = await fetch('/dir.json')
+        const response = await fetch(`${this.baseUrl}dir.json`)
         const containerDir: DirNode = await response.json()
         await this.buildTree(baseDir, containerDir.children || [], fileTree)
         return fileTree
